@@ -56,15 +56,18 @@ function formatDate(unixSeconds) {
  * @param {boolean} isError
  */
 function setStateMessage(text, isError = false) {
-  // TODO:
-  //   - Set stateMessageEl.textContent = text
-  //   - If isError is true, add the "error" CSS class to stateMessageEl
-  //     (stateMessageEl.classList.add("error"))
-  //   - If isError is false, make sure the "error" class is removed
-  //     (stateMessageEl.classList.remove("error"))
-  //   - If text is empty (""), hide the element entirely:
-  //     stateMessageEl.style.display = "none"
-  //     Otherwise make sure it's visible: stateMessageEl.style.display = ""
+  stateMessageEl.textContent = text;
+  if (isError) {
+    stateMessageEl.classList.add("error");
+  }
+  else {
+    stateMessageEl.classList.remove("error");
+  }
+  if (text) {
+    stateMessageEl.style.display = "block";
+  } else {
+    stateMessageEl.style.display = "none";
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -97,7 +100,7 @@ function setStateMessage(text, isError = false) {
  *   the CSS classes already defined in style.css. It should look
  *   like this (use template literals — backticks):
  *
- *   `
+ *   
  *     <li class="post-item">
  *       <div class="post-rank">${rank}</div>
  *       <div class="post-body">
@@ -114,7 +117,7 @@ function setStateMessage(text, isError = false) {
  *         </div>
  *       </div>
  *     </li>
- *   `
+ *   
  *
  *   Notes:
  *     - post.url is where the post itself links to (could be an
@@ -124,7 +127,24 @@ function setStateMessage(text, isError = false) {
  *     - Use formatDate(post.created_utc) for a readable date.
  */
 function buildPostHTML(post, rank) {
-  // Remove this line and write your return statement
+  return `
+    <li class="post-item">
+      <div class="post-rank">${rank}</div>
+      <div class="post-body">
+        <a class="post-title" href="${post.url}" target="_blank" rel="noopener">
+          ${post.title}
+        </a>
+        <div class="post-meta">
+          <span>${post.score} points</span>
+          <span>by ${post.author}</span>
+          <span>${formatDate(post.created_utc)}</span>
+          <a href="${post.permalink}" target="_blank" rel="noopener">
+            ${post.num_comments} comments
+          </a>
+        </div>
+      </div>
+    </li>
+  `;
 }
 
 /**
@@ -149,7 +169,14 @@ function buildPostHTML(post, rank) {
  *     postListEl.innerHTML = html;
  */
 function renderPosts(posts) {
-  // Remove this line and write your implementation
+  if (posts.length === 0) {
+    setStateMessage("No posts found. Has the pipeline been run yet?");
+    return;
+  }
+  setStateMessage("");
+  const html = posts.map((post, index) => buildPostHTML(post, index + 1)).join("");
+  postListEl.innerHTML = html;
+
 }
 
 // ─────────────────────────────────────────────
@@ -205,7 +232,22 @@ function renderPosts(posts) {
  *   }
  */
 async function fetchTopPosts() {
-  // Remove this line and write your implementation
+  setStateMessage("Loading posts...");
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/posts/top?limit=10`);
+    if (!response.ok) {
+      throw new Error(`Server responded with status ${response.status}`);
+    }
+    const result = await response.json();
+    if (result.success) {
+      renderPosts(result.data);
+    } else {
+      setStateMessage(result.error || "Something went wrong.", true);
+    }
+  } catch (error) {
+    console.error(error);
+    setStateMessage("Could not reach the API. Is the backend server running on port 5000?", true);
+  }
 }
 
 // ─────────────────────────────────────────────
